@@ -1,5 +1,5 @@
 # GxSVT.lv2
-Bass preamp simulation 
+Tube based Bass preamp simulation 
 
 
 ![GxSVT](https://raw.githubusercontent.com/brummer10/GxSVT.lv2/master/GxSVT.png)
