@@ -179,7 +179,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*   descriptor,
     ui->args[6] = (struct gx_args*) malloc(sizeof(struct gx_args));
     ui->args[6]->ui = ui;
     ui->args[6]->port_index = (int)HIGHSWITCH;
-    g_signal_connect(G_OBJECT(ui->adj[5]), "value-changed",
+    g_signal_connect(G_OBJECT(ui->adj[6]), "value-changed",
           G_CALLBACK(ref_value_changed),(gpointer*)ui->args[6]);
 
     ui->adj[0] = gtk_adjustment_new( 0.5, 0.0, 1.0, 0.01, 0.01*10.0, 0);
