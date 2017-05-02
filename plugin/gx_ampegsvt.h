@@ -38,6 +38,7 @@ typedef enum
    TREBLE, 
    VOLUME,
    LOWSWITCH,
+   MIDSWITCH,
    HIGHSWITCH,
 } PortIndex;
 

@@ -26,11 +26,11 @@ typedef struct {
     GtkWidget* bp_box;
     GtkWidget* bp_label;
     struct gx_args *bp_args;
-    GtkWidget* vkbox[6];
-    GtkObject* adj[6];
-    GtkWidget* knob[6];
-    GtkWidget* label[6];
-    struct gx_args *args[6];
+    GtkWidget* vkbox[7];
+    GtkObject* adj[7];
+    GtkWidget* knob[7];
+    GtkWidget* label[7];
+    struct gx_args *args[7];
     GtkWidget* window;  /* For optional show interface. */
 } gx_ampegsvtUI;
 
@@ -68,7 +68,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*   descriptor,
     ui->bp_box      = NULL;
     ui->bp_label    = NULL;
     ui->window      = NULL;
-    for (int i = 0; i<6;i++) {
+    for (int i = 0; i<7;i++) {
         ui->vkbox[i]   = NULL;
         ui->knob[i]    = NULL;
         ui->label[i]   = NULL;
@@ -142,9 +142,9 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*   descriptor,
     g_signal_connect(G_OBJECT(ui->adj[4]), "value-changed",
           G_CALLBACK(ref_value_changed),(gpointer*)ui->args[4]);
 
-    ui->adj[5] = gtk_adjustment_new( 0.0, 0.0, 1.0, 1.0, 0.01*10.0, 0);
-    ui->knob[5] = gtk_switch_new_with_adjustment(GTK_ADJUSTMENT(ui->adj[5]));
-    ui->label[5] = gtk_label_new("HIGH");
+    ui->adj[5] = gtk_adjustment_new( 1.0, 0.0, 2.0, 1.0, 0.01*10.0, 0);
+    ui->knob[5] = gtk_select2_new_with_adjustment(GTK_ADJUSTMENT(ui->adj[5]));
+    ui->label[5] = gtk_label_new("MID");
     ui->vkbox[5] = gtk_vbox_new(FALSE, 0);
 
     gtk_widget_modify_fg (ui->label[5], GTK_STATE_NORMAL, &color);
@@ -158,9 +158,29 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*   descriptor,
     gtk_box_pack_start(GTK_BOX(ui->vkbox[5]), ui->label[5], FALSE, FALSE, 0);
     ui->args[5] = (struct gx_args*) malloc(sizeof(struct gx_args));
     ui->args[5]->ui = ui;
-    ui->args[5]->port_index = (int)HIGHSWITCH;
+    ui->args[5]->port_index = (int)MIDSWITCH;
     g_signal_connect(G_OBJECT(ui->adj[5]), "value-changed",
           G_CALLBACK(ref_value_changed),(gpointer*)ui->args[5]);
+
+    ui->adj[6] = gtk_adjustment_new( 0.0, 0.0, 1.0, 1.0, 0.01*10.0, 0);
+    ui->knob[6] = gtk_switch_new_with_adjustment(GTK_ADJUSTMENT(ui->adj[6]));
+    ui->label[6] = gtk_label_new("HIGH");
+    ui->vkbox[6] = gtk_vbox_new(FALSE, 0);
+
+    gtk_widget_modify_fg (ui->label[6], GTK_STATE_NORMAL, &color);
+    style = gtk_widget_get_style(ui->label[6]);
+    pango_font_description_set_size(style->font_desc, 10*PANGO_SCALE);
+    pango_font_description_set_weight(style->font_desc, PANGO_WEIGHT_BOLD);
+    gtk_widget_modify_font(ui->label[6], style->font_desc);
+
+    gtk_box_pack_start(GTK_BOX(ui->hbox), ui->vkbox[6], TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(ui->vkbox[6]), ui->knob[6], TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(ui->vkbox[6]), ui->label[6], FALSE, FALSE, 0);
+    ui->args[6] = (struct gx_args*) malloc(sizeof(struct gx_args));
+    ui->args[6]->ui = ui;
+    ui->args[6]->port_index = (int)HIGHSWITCH;
+    g_signal_connect(G_OBJECT(ui->adj[5]), "value-changed",
+          G_CALLBACK(ref_value_changed),(gpointer*)ui->args[6]);
 
     ui->adj[0] = gtk_adjustment_new( 0.5, 0.0, 1.0, 0.01, 0.01*10.0, 0);
     ui->knob[0] = gtk_knob_new_with_adjustment(GTK_ADJUSTMENT(ui->adj[0]));

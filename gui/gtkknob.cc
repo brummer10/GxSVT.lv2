@@ -228,17 +228,17 @@ static void knob_expose(GtkWidget *widget, int knob_x, int knob_y, GdkEventExpos
             cairo_move_to (cr, knobx1+knob_x/2.6-extents.width/2.3, knoby1+knob_y/2+extents.height/0.7);
             cairo_show_text(cr, "Low");
         } else if (priv->model == 5) {
-            cairo_text_extents(cr,"Off", &extents);
+            cairo_text_extents(cr,"220", &extents);
             cairo_move_to (cr, knobx1-knob_x/2.4-extents.width/1.4, knoby1+knob_y/2+extents.height/0.8);
-            cairo_show_text(cr, "Off");
+            cairo_show_text(cr, "220");
 
-            cairo_text_extents(cr,"Low", &extents);
-            cairo_move_to (cr, knobx1-extents.width/2, knoby1-knob_y/2-extents.height/2);
-            cairo_show_text(cr, "Low");
+            cairo_text_extents(cr,"800Hz", &extents);
+            cairo_move_to (cr, knobx1-extents.width/2.2, knoby1-knob_y/2-extents.height/2);
+            cairo_show_text(cr, "800Hz");
 
-            cairo_text_extents(cr,"High", &extents);
-            cairo_move_to (cr, knobx1+knob_x/2.6-extents.width/3.0, knoby1+knob_y/2+extents.height);
-            cairo_show_text(cr, "High");
+            cairo_text_extents(cr,"3k", &extents);
+            cairo_move_to (cr, knobx1+knob_x/2.6-extents.width/3.0, knoby1+knob_y/2+extents.height/0.8);
+            cairo_show_text(cr, "3k");
         } else if (priv->model == 6) {
             cairo_text_extents(cr,"Low", &extents);
             cairo_move_to (cr, knobx1-knob_x/2.6-extents.width/1.4, knoby1+knob_y/2+extents.height);

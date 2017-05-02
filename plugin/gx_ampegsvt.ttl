@@ -132,11 +132,24 @@ rdfs:comment """
         lv2:scalePoint [rdfs:label "LOWCUT"; rdf:value 0];
         lv2:scalePoint [rdfs:label "OFF"; rdf:value 1];
         lv2:scalePoint [rdfs:label "ULTRALOW"; rdf:value 2];
-
     ] , [
         a lv2:InputPort ,
             lv2:ControlPort ;
         lv2:index 8 ;
+        lv2:symbol "MIDSWITCH" ;
+        lv2:name "MIDSWITCH" ;
+        lv2:default 1.0 ;
+        lv2:minimum 0.0 ;
+        lv2:maximum 2.0 ;
+        lv2:portProperty lv2:integer;
+        lv2:portProperty lv2:enumeration ; 
+        lv2:scalePoint [rdfs:label "220Hz"; rdf:value 0];
+        lv2:scalePoint [rdfs:label "800Hz"; rdf:value 1];
+        lv2:scalePoint [rdfs:label "3kHz"; rdf:value 2];
+    ] , [
+        a lv2:InputPort ,
+            lv2:ControlPort ;
+        lv2:index 9 ;
         lv2:symbol "HIGHSWITCH" ;
         lv2:name "HIGHSWITCH" ;
         lv2:default 0.0 ;
@@ -146,7 +159,6 @@ rdfs:comment """
         lv2:portProperty lv2:enumeration ; 
         lv2:scalePoint [rdfs:label "OFF"; rdf:value 0];
         lv2:scalePoint [rdfs:label "ON"; rdf:value 1];
-
     ] .
 
 <http://guitarix.sourceforge.net/plugins/gx_ampegsvt_gui#_ampegsvt_>
