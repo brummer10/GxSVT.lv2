@@ -26,11 +26,11 @@ typedef struct {
     GtkWidget* bp_box;
     GtkWidget* bp_label;
     struct gx_args *bp_args;
-    GtkWidget* vkbox[7];
-    GtkObject* adj[7];
-    GtkWidget* knob[7];
-    GtkWidget* label[7];
-    struct gx_args *args[7];
+    GtkWidget* vkbox[8];
+    GtkObject* adj[8];
+    GtkWidget* knob[8];
+    GtkWidget* label[8];
+    struct gx_args *args[8];
     GtkWidget* window;  /* For optional show interface. */
 } gx_ampegsvtUI;
 
@@ -68,7 +68,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*   descriptor,
     ui->bp_box      = NULL;
     ui->bp_label    = NULL;
     ui->window      = NULL;
-    for (int i = 0; i<7;i++) {
+    for (int i = 0; i<8;i++) {
         ui->vkbox[i]   = NULL;
         ui->knob[i]    = NULL;
         ui->label[i]   = NULL;
@@ -262,6 +262,25 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*   descriptor,
     g_signal_connect(G_OBJECT(ui->adj[3]), "value-changed",
           G_CALLBACK(ref_value_changed),(gpointer*)ui->args[3]);
 
+    ui->adj[7] = gtk_adjustment_new( 0.0, 0.0, 1.0, 1.0, 0.01*10.0, 0);
+    ui->knob[7] = gtk_switch_new_with_adjustment(GTK_ADJUSTMENT(ui->adj[7]));
+    ui->label[7] = gtk_label_new("CAB");
+    ui->vkbox[7] = gtk_vbox_new(FALSE, 0);
+
+    gtk_widget_modify_fg (ui->label[7], GTK_STATE_NORMAL, &color);
+    style = gtk_widget_get_style(ui->label[7]);
+    pango_font_description_set_size(style->font_desc, 10*PANGO_SCALE);
+    pango_font_description_set_weight(style->font_desc, PANGO_WEIGHT_BOLD);
+    gtk_widget_modify_font(ui->label[7], style->font_desc);
+
+    gtk_box_pack_start(GTK_BOX(ui->hbox), ui->vkbox[7], TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(ui->vkbox[7]), ui->knob[7], TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(ui->vkbox[7]), ui->label[7], FALSE, FALSE, 0);
+    ui->args[7] = (struct gx_args*) malloc(sizeof(struct gx_args));
+    ui->args[7]->ui = ui;
+    ui->args[7]->port_index = (int)CABSWITCH;
+    g_signal_connect(G_OBJECT(ui->adj[7]), "value-changed",
+          G_CALLBACK(ref_value_changed),(gpointer*)ui->args[7]);
 
 
     *widget = ui->pbox;
@@ -273,7 +292,7 @@ static void cleanup(LV2UI_Handle handle) {
 
     gx_ampegsvtUI* ui = (gx_ampegsvtUI*)handle;
     if (GTK_IS_WIDGET(ui->pbox)) {
-        for(int i = 0;i<6;i++) {
+        for(int i = 0;i<8;i++) {
             if (GTK_IS_WIDGET(ui->knob[i])) {
                 gtk_widget_destroy(ui->knob[i]);
             }
@@ -316,7 +335,7 @@ static void cleanup(LV2UI_Handle handle) {
             gtk_widget_destroy(ui->window);
         }
         if (ui->bp_args) free(ui->bp_args);
-        for(int i = 0;i<6;i++) {
+        for(int i = 0;i<8;i++) {
             if (ui->args[i] ) free(ui->args[i]);
         }
         free(ui);

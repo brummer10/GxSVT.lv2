@@ -40,6 +40,7 @@ typedef enum
    LOWSWITCH,
    MIDSWITCH,
    HIGHSWITCH,
+   CABSWITCH,
 } PortIndex;
 
 #endif //SRC_HEADERS_GXEFFECTS_H_
