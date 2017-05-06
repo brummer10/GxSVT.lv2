@@ -64,12 +64,12 @@ inline void Dsp::init(uint32_t samplingFreq)
 {
 	fSamplingFreq = samplingFreq;
 	fConst0 = double(min(192000, max(1, fSamplingFreq)));
-	fConst1 = (1.69986308093725e-05 * fConst0);
-	fConst2 = (0.18406572115012 + fConst1);
-	fConst3 = ((0.18406572115012 - fConst1) / fConst2);
-	fConst4 = (0.00052797285048206 * fConst0);
-	fConst5 = (fConst4 - 5.61673245193681);
-	fConst6 = (0 - (5.61673245193681 + fConst4));
+	fConst1 = (2.03737247070116e-05 * fConst0);
+	fConst2 = (0.0220612140634433 + fConst1);
+	fConst3 = ((0.0220612140634433 - fConst1) / fConst2);
+	fConst4 = (0.00063280234915257 * fConst0);
+	fConst5 = (fConst4 - 0.673193988460181);
+	fConst6 = (0 - (0.673193988460181 + fConst4));
 	fConst7 = (1.0 / fConst2);
 	clear_state_f();
 }
@@ -83,7 +83,7 @@ void always_inline Dsp::compute(int count, FAUSTFLOAT *input0, FAUSTFLOAT *outpu
 {
 	for (int i=0; i<count; i++) {
 		fRec0[0] = ((double)input0[i] - (fConst3 * fRec0[1]));
-		output0[i] = (FAUSTFLOAT) (0.33 * (fConst7 * ((fConst6 * fRec0[0]) + (fConst5 * fRec0[1]))));
+		output0[i] = (FAUSTFLOAT) ( 0.33 * (fConst7 * ((fConst6 * fRec0[0]) + (fConst5 * fRec0[1]))));
 		// post processing
 		fRec0[1] = fRec0[0];
 	}

@@ -240,13 +240,13 @@ static void knob_expose(GtkWidget *widget, int knob_x, int knob_y, GdkEventExpos
             cairo_move_to (cr, knobx1+knob_x/2.6-extents.width/3.0, knoby1+knob_y/2+extents.height/0.8);
             cairo_show_text(cr, "3k");
         } else if (priv->model == 6) {
-            cairo_text_extents(cr,"Low", &extents);
+            cairo_text_extents(cr,"Norm", &extents);
             cairo_move_to (cr, knobx1-knob_x/2.6-extents.width/1.4, knoby1+knob_y/2+extents.height);
-            cairo_show_text(cr, "Low");
+            cairo_show_text(cr, "Norm");
 
-            cairo_text_extents(cr,"High", &extents);
+            cairo_text_extents(cr,"Bright", &extents);
             cairo_move_to (cr, knobx1+knob_x/2.6-extents.width/2.3, knoby1+knob_y/2+extents.height/1.3);
-            cairo_show_text(cr, "High");
+            cairo_show_text(cr, "bright");
         }
         cairo_pattern_destroy (pat);
     } else {
