@@ -473,6 +473,10 @@ static gboolean gtk_knob_button_press (GtkWidget *widget, GdkEventButton *event)
             float value = gtk_range_get_value(GTK_RANGE(widget))+1;
             if(value<=gtk_adjustment_get_upper(adj)) gtk_range_set_value(GTK_RANGE(widget),value);
             else gtk_range_set_value(GTK_RANGE(widget),0);
+        } else if (priv->model == 3) {
+            float value = gtk_range_get_value(GTK_RANGE(widget));
+            if(value) gtk_range_set_value(GTK_RANGE(widget),0);
+            else gtk_range_set_value(GTK_RANGE(widget),1);
         }
         knob_pointer_event(widget, event->x, event->y, priv->knob_x, priv->knob_y,
                            FALSE, event->state);
