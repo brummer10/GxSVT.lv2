@@ -33,9 +33,9 @@
 	BUNDLE = $(NAME).lv2
 	VER = 0.1
 	# set compile flags
-	CXXFLAGS += -I. -I./dsp -I./plugin  -fPIC -DPIC -O2 -Wall -funroll-loops -ffast-math -fomit-frame-pointer -fstrength-reduce $(SSE_CFLAGS)
-	LDFLAGS += -I./gui -shared -lm 
-	GUI_LDFLAGS += -I. -shared -lm `pkg-config --cflags --libs gtk+-2.0`
+	CXXFLAGS += -I. -I./dsp -I./plugin -I./dsp/zita-resampler-1.1.0 -I./dsp/zita-resampler-1.1.0/zita-resampler -fPIC -DPIC -O2 -Wall -funroll-loops -ffast-math -fomit-frame-pointer -fstrength-reduce $(SSE_CFLAGS)
+	LDFLAGS += -I. -shared -lm 
+	GUI_LDFLAGS += -I./gui -shared -lm `pkg-config --cflags --libs gtk+-2.0`
 	# invoke build files
 	OBJECTS = plugin/$(NAME).cpp 
 	GUI_OBJECTS = gui/$(NAME)_ui.c gui/resources.c gui/resources.h gui/gtkknob.cc gui/gtkknob.h gui/paintbox.cpp gui/paintbox.h
