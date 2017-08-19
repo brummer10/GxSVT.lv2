@@ -38,7 +38,8 @@
 	GUI_LDFLAGS += -I./gui -shared -lm `pkg-config --cflags --libs gtk+-2.0`
 	# invoke build files
 	OBJECTS = plugin/$(NAME).cpp 
-	GUI_OBJECTS = gui/$(NAME)_ui.c gui/resources.c gui/resources.h gui/gtkknob.cc gui/gtkknob.h gui/paintbox.cpp gui/paintbox.h
+	GUI_OBJECTS = gui/$(NAME)_ui.c gui/resources.c gui/gtkknob.cc gui/paintbox.cpp
+	GUI_HEADERS = gui/resources.h gui/gtkknob.h gui/paintbox.h
 	## output style (bash colours)
 	BLUE = "\033[1;34m"
 	RED =  "\033[1;31m"
@@ -92,7 +93,7 @@ uninstall :
 	@rm -rf $(INSTALL_DIR)/$(BUNDLE)
 	@echo ". ." $(BLUE)", done"$(NONE)
 
-$(NAME) : clean
+$(NAME) : clean $(GUI_HEADERS)
 	$(CXX) $(CXXFLAGS) $(OBJECTS) $(LDFLAGS) -o $(NAME).so
 	$(CXX) $(CXXFLAGS) -Wl,-z,nodelete -std=c++11  $(GUI_OBJECTS) $(GUI_LDFLAGS) -o $(NAME)_ui.so
 
