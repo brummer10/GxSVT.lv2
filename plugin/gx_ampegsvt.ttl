@@ -175,7 +175,8 @@ rdfs:comment """
     ] .
 
 <http://guitarix.sourceforge.net/plugins/gx_ampegsvt_gui#_ampegsvt_>
-  a guiext:GtkUI;
+  a guiext:X11UI;
   guiext:binary <gx_ampegsvt_ui.so>;
-  guiext:requiredFeature guiext:makeResident;
+        lv2:extensionData guiext::idle ; 
+        lv2:requiredFeature guiext:makeResident;
   .
