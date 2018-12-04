@@ -249,15 +249,15 @@ static LV2UI_Handle instantiate(const struct _LV2UI_Descriptor * descriptor,
 		return NULL;
 	}
 
-	ui->controls[0] = { 1.0, 1.0, 0.0, 1.0, 1.0, 50, 40, 61, 61, false,"POWER", BSWITCH, BYPASS};
-	ui->controls[1] = { 1.0, 1.0, 0.0, 2.0, 1.0, 110, 40, 61, 61, false,"LOW", ENUM, LOWSWITCH};
-	ui->controls[2] = { 1.0, 1.0, 0.0, 2.0, 1.0, 180, 40, 61, 61, false,"MID", ENUM, MIDSWITCH};
-	ui->controls[3] = { 0.0, 0.0, 0.0, 1.0, 1.0, 250, 40, 61, 61, false,"HIGH", SWITCH, HIGHSWITCH};
-	ui->controls[4] = { 0.0, 0.0, 0.0, 1.0, 1.0, 320, 40, 61, 61, false,"CAB", SWITCH, CABSWITCH};
-	ui->controls[5] = { 0.5, 0.5, 0.0, 1.0, 0.01, 390, 40, 61, 61, false,"BASS", KNOB, BASS};
-	ui->controls[6] = { 0.5, 0.5, 0.0, 1.0, 0.01, 460, 40, 61, 61, false,"MIDDLE", KNOB, MIDDLE};
-	ui->controls[7] = { 0.5, 0.5, 0.0, 1.0, 0.01, 530, 40, 61, 61, false,"TREBLE", KNOB, TREBLE};
-	ui->controls[8] = { 0.5, 0.5, 0.0, 1.0, 0.01, 600, 40, 61, 61, false,"VOLUME", KNOB, VOLUME};
+	ui->controls[0] = (gx_controller) {{ 1.0, 1.0, 0.0, 1.0, 1.0}, { 50, 40, 61, 61}, false,"POWER", BSWITCH, BYPASS};
+	ui->controls[1] = (gx_controller) {{ 1.0, 1.0, 0.0, 2.0, 1.0}, { 110, 40, 61, 61}, false,"LOW", ENUM, LOWSWITCH};
+	ui->controls[2] = (gx_controller) {{ 1.0, 1.0, 0.0, 2.0, 1.0}, { 180, 40, 61, 61}, false,"MID", ENUM, MIDSWITCH};
+	ui->controls[3] = (gx_controller) {{ 0.0, 0.0, 0.0, 1.0, 1.0}, { 250, 40, 61, 61}, false,"HIGH", SWITCH, HIGHSWITCH};
+	ui->controls[4] = (gx_controller) {{ 0.0, 0.0, 0.0, 1.0, 1.0}, { 320, 40, 61, 61}, false,"CAB", SWITCH, CABSWITCH};
+	ui->controls[5] = (gx_controller) {{ 0.5, 0.5, 0.0, 1.0, 0.01},{ 390, 40, 61, 61}, false,"BASS", KNOB, BASS};
+	ui->controls[6] = (gx_controller) {{ 0.5, 0.5, 0.0, 1.0, 0.01},{ 460, 40, 61, 61}, false,"MIDDLE", KNOB, MIDDLE};
+	ui->controls[7] = (gx_controller) {{ 0.5, 0.5, 0.0, 1.0, 0.01},{ 530, 40, 61, 61}, false,"TREBLE", KNOB, TREBLE};
+	ui->controls[8] = (gx_controller) {{ 0.5, 0.5, 0.0, 1.0, 0.01},{ 600, 40, 61, 61}, false,"VOLUME", KNOB, VOLUME};
 
 
 	ui->pedal = cairo_image_surface_create_from_stream(ui, LDVAR(pedal_png));
@@ -855,6 +855,46 @@ void get_last_active_controller(gx_ampegsvtUI *ui, bool set) {
 	}
 }
 
+// map supported key's to integers or return zerro
+static int key_mapping(Display *dpy, XKeyEvent *xkey) {
+	if (xkey->keycode == XKeysymToKeycode(dpy,XK_Tab))
+		return (xkey->state == ShiftMask) ? 1 : 2;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_Up))
+		return 3;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_Right))
+		return 3;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_Down))
+		return 4;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_Left))
+		return 4;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_Home))
+		return 5;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_Insert))
+		return 6;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_End))
+		return 7;
+	// keypad
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Subtract))
+		return 1;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Add))
+		return 2;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Up))
+		return 3;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Right))
+		return 3;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Down))
+		return 4;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Left))
+		return 4;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Home))
+		return 5;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Insert))
+		return 6;
+	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_End))
+		return 7;
+	else return 0;
+}
+
 /*------------- the event loop ---------------*/
 
 // general xevent handler
@@ -916,26 +956,26 @@ static void event_handler(gx_ampegsvtUI *ui) {
 			break;
 
 			case KeyPress:
-				if ((xev.xkey.state == ShiftMask) &&
-				  (xev.xkey.keycode == XKeysymToKeycode(ui->dpy,XK_Tab)))
-					set_previous_controller_active(ui);
-				else if (xev.xkey.keycode == XKeysymToKeycode(ui->dpy,XK_Tab))
-					set_next_controller_active(ui);
-				else if (xev.xkey.keycode == XKeysymToKeycode(ui->dpy,XK_Up))
-					key_event(ui, 1);
-				else if (xev.xkey.keycode == XKeysymToKeycode(ui->dpy,XK_Right))
-					key_event(ui, 1);
-				else if (xev.xkey.keycode == XKeysymToKeycode(ui->dpy,XK_Down))
-					key_event(ui, -1);
-				else if (xev.xkey.keycode == XKeysymToKeycode(ui->dpy,XK_Left))
-					key_event(ui, -1);
-				else if (xev.xkey.keycode == XKeysymToKeycode(ui->dpy,XK_Home))
-					set_key_value(ui, 1);
-				else if (xev.xkey.keycode == XKeysymToKeycode(ui->dpy,XK_Insert))
-					set_key_value(ui, 2);
-				else if (xev.xkey.keycode == XKeysymToKeycode(ui->dpy,XK_End))
-					set_key_value(ui, 3);
+				switch (key_mapping(ui->dpy, &xev.xkey)) {
+					case 1: set_previous_controller_active(ui);
+					break;
+					case 2: set_next_controller_active(ui);
+					break;
+					case 3: key_event(ui, 1);
+					break;
+					case 4: key_event(ui, -1);
+					break;
+					case 5: set_key_value(ui, 1);
+					break;
+					case 6: set_key_value(ui, 2);
+					break;
+					case 7: set_key_value(ui, 3);
+					break;
+					default:
+					break;
+				}
 			break;
+
 			case EnterNotify:
 				if (!blocked) get_last_active_controller(ui, true);
 			break;
@@ -944,7 +984,7 @@ static void event_handler(gx_ampegsvtUI *ui) {
 			break;
 			case MotionNotify:
 				// mouse move while button1 is pressed
-				if(xev.xmotion.state == Button1MotionMask) {
+				if(xev.xmotion.state & Button1Mask) {
 					motion_event(ui, start_value, xev.xmotion.y);
 				}
 			break;
@@ -1015,7 +1055,6 @@ static const LV2UI_Descriptor descriptor = {
 	extension_data
 };
 
-extern "C"
 LV2_SYMBOL_EXPORT
 const LV2UI_Descriptor* lv2ui_descriptor(uint32_t index) {
 	switch (index) {
