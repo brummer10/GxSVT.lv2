@@ -257,7 +257,7 @@ Gx_ampegsvt_::Gx_ampegsvt_() :
   valve(valve::plugin()),
   cabsim(cabsim::plugin()),
   bypass(0),
-  bypass_(0),
+  bypass_(2),
   model(1),
   model_t(1),
   midmodel(0),
