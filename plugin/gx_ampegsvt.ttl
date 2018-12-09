@@ -80,7 +80,7 @@ rdfs:comment """
         lv2:minimum 0.0 ;
         lv2:maximum 1.0 ;
         lv2:designation lv2:enabled;
-        lv2:portProperty lv2:integer;
+        lv2:portProperty lv2:toggled;
     ] 
       , [
         a lv2:InputPort ,
