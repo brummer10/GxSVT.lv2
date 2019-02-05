@@ -58,7 +58,7 @@ all : check $(NAME)
 	else echo $(RED)"sorry, build failed"; fi
 	@echo $(NONE)
 
-mod : 
+mod : nogui
 	@mkdir -p ./$(BUNDLE)
 	@cp -R ./MOD/* ./$(BUNDLE)
 	@mv ./*.so ./$(BUNDLE)
