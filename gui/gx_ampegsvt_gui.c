@@ -2,192 +2,27 @@
 #include <math.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <cairo.h>
-#include <cairo-xlib.h>
-
-#include <X11/Xutil.h>
-#include <X11/keysym.h>
-#include <X11/Xatom.h>
 
 #include "./gx_ampegsvt.h"
-
-/*---------------------------------------------------------------------
------------------------------------------------------------------------	
-				define controller numbers
------------------------------------------------------------------------
-----------------------------------------------------------------------*/
-
-#define CONTROLS 9
-
-/*---------------------------------------------------------------------
------------------------------------------------------------------------	
-				define min/max if not defined already
------------------------------------------------------------------------
-----------------------------------------------------------------------*/
-
-#ifndef min
-#define min(x, y) ((x) < (y) ? (x) : (y))
-#endif
-#ifndef max
-#define max(x, y) ((x) < (y) ? (y) : (x))
-#endif
-
-/*---------------------------------------------------------------------
------------------------------------------------------------------------	
-		define some MACROS to read png data from binary stream 
-		png's been converted to object files with
-		ld -r -b binary name.png -o name.o
------------------------------------------------------------------------
-----------------------------------------------------------------------*/
-
-#ifdef __APPLE__
-#include <mach-o/getsect.h>
-
-#define EXTLD(NAME) \
-  extern const unsigned char _section$__DATA__ ## NAME [];
-#define LDVAR(NAME) _section$__DATA__ ## NAME
-#define LDLEN(NAME) (getsectbyname("__DATA", "__" #NAME)->size)
-
-#elif (defined __WIN32__)  /* mingw */
-
-#define EXTLD(NAME) \
-  extern const unsigned char binary_ ## NAME ## _start[]; \
-  extern const unsigned char binary_ ## NAME ## _end[];
-#define LDVAR(NAME) \
-  binary_ ## NAME ## _start
-#define LDLEN(NAME) \
-  ((binary_ ## NAME ## _end) - (binary_ ## NAME ## _start))
-
-#else /* gnu/linux ld */
-
-#define EXTLD(NAME) \
-  extern const unsigned char _binary_ ## NAME ## _start[]; \
-  extern const unsigned char _binary_ ## NAME ## _end[];
-#define LDVAR(NAME) \
-  _binary_ ## NAME ## _start
-#define LDLEN(NAME) \
-  ((_binary_ ## NAME ## _end) - (_binary_ ## NAME ## _start))
-#endif
-
-// png's linked in as binarys
-EXTLD(pedal_png)
-EXTLD(pswitch_on_png)
-EXTLD(pswitch_off_png)
-
-/*---------------------------------------------------------------------
------------------------------------------------------------------------	
-					define needed structs
------------------------------------------------------------------------
-----------------------------------------------------------------------*/
-
-// struct definition to read binary data into cairo surface 
-typedef struct  {
-	const unsigned char * data;
-	long int position;
-} binary_stream;
-
-// define controller type
-typedef enum {
-	KNOB,
-	SWITCH,
-	BSWITCH,
-	ENUM,
-} ctype;
-
-// define controller position in window
-typedef struct {
-	int x;
-	int y;
-	int width;
-	int height;
-} gx_alinment;
-
-// define controller adjustment
-typedef struct {
-	float std_value;
-	float value;
-	float min_value;
-	float max_value;
-	float step;
-} gx_adjustment;
-
-// controller struct
-typedef struct {
-	gx_adjustment adj;
-	gx_alinment al;
-	bool is_active;
-	const char* label;
-	ctype type;
-	PortIndex port;
-} gx_controller;
-
-// resize window
-typedef struct {
-	double x;
-	double y;
-	double x1;
-	double y1;
-	double x2;
-	double y2;
-	double c;
-	double xc;
-} gx_scale;
-
-/*---------------------------------------------------------------------
------------------------------------------------------------------------	
-				the main LV2 handle->XWindow
------------------------------------------------------------------------
-----------------------------------------------------------------------*/
-
-// main window struct
-typedef struct {
-	Display *dpy;
-	Window win;
-	void *parentXwindow;
-	Visual *visual;
-	long event_mask;
-	Atom DrawController;
-
-	int width;
-	int height;
-	int init_width;
-	int init_height;
-	int pos_x;
-	int pos_y;
-
-	binary_stream png_stream;
-	cairo_surface_t *pedal;
-	cairo_surface_t *pswitch_on;
-	cairo_surface_t *pswitch_off;
-	cairo_surface_t *frame;
-	cairo_t *crf;
-	cairo_t *cr;
-	cairo_surface_t *surface;
-
-	gx_controller controls[CONTROLS];
-	int block_event;
-	gx_scale rescale;
-
-	void *controller;
-	LV2UI_Write_Function write_function;
-	LV2UI_Resize* resize;
-} gx_ampegsvtUI;
-
-// forward declaration to resize window and cairo surface
-static void resize_event(gx_ampegsvtUI *ui);
+#include "gui/gx_gui.h"
 
 /*---------------------------------------------------------------------
 -----------------------------------------------------------------------	
 		load png data from binary blob into cairo surface
 -----------------------------------------------------------------------
 ----------------------------------------------------------------------*/
+
+// png's linked in as binarys
+EXTLD(pedal_png)
+EXTLD(pswitch_on_png)
+EXTLD(pswitch_off_png)
 
 // read png data from binary blob
 cairo_status_t png_stream_reader (void *_stream, unsigned char *data, unsigned int length) {
@@ -225,26 +60,24 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor * descriptor,
 		return NULL;
 	}
 
-	ui->parentXwindow = 0;
+	ui->parentWindow = 0;
 	LV2UI_Resize* resize = NULL;
 
 	for (int i = 0; features[i]; ++i) {
 		if (!strcmp(features[i]->URI, LV2_UI__parent)) {
-			ui->parentXwindow = features[i]->data;
+			ui->parentWindow = features[i]->data;
 		} else if (!strcmp(features[i]->URI, LV2_UI__resize)) {
 			resize = (LV2UI_Resize*)features[i]->data;
 		}
 	}
 
-	if (ui->parentXwindow == NULL)  {
-		fprintf(stderr, "ERROR: Failed to open parentXwindow for %s\n", plugin_uri);
+	if (ui->parentWindow == NULL)  {
+		fprintf(stderr, "ERROR: Failed to open parentWindow for %s\n", plugin_uri);
 		free(ui);
 		return NULL;
 	}
 
-	ui->dpy = XOpenDisplay(0);
-
-	if (ui->dpy == NULL)  {
+	if (!gx_gui_open_display(ui)) { // sets ui->dpy (only used by Linux)
 		fprintf(stderr, "ERROR: Failed to open display for %s\n", plugin_uri);
 		free(ui);
 		return NULL;
@@ -267,22 +100,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor * descriptor,
 	ui->height = ui->init_height = cairo_image_surface_get_height(ui->pedal);
 	ui->width = ui->init_width -120 + (40 * CONTROLS);
 
-	ui->win = XCreateWindow(ui->dpy, (Window)ui->parentXwindow, 0, 0,
-								ui->width, ui->height, 0,
-								CopyFromParent, InputOutput,
-								CopyFromParent, CopyFromParent, 0);
-
-	ui->event_mask = StructureNotifyMask|ExposureMask|KeyPressMask 
-					|EnterWindowMask|LeaveWindowMask|ButtonReleaseMask
-					|ButtonPressMask|Button1MotionMask;
-
-	XSelectInput(ui->dpy, ui->win, ui->event_mask);
-	XMapWindow(ui->dpy, ui->win);
-	XClearWindow(ui->dpy, ui->win);
-
-	ui->visual = DefaultVisual(ui->dpy, DefaultScreen (ui->dpy));
-	ui->surface = cairo_xlib_surface_create (ui->dpy, ui->win, ui->visual,
-										ui->width, ui->height);
+	gx_gui_create_window_and_surface(ui); // sets ui->win and ui->surface
 	ui->cr = cairo_create(ui->surface);
 
 	ui->frame = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 61, 81);
@@ -307,7 +125,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor * descriptor,
 	ui->rescale.x2 =  ui->rescale.xc / ui->rescale.c;
 	ui->rescale.y2 = ui->rescale.y / ui->rescale.c;
 
-	ui->DrawController = XInternAtom(ui->dpy, "ControllerMessage", False);
+	gx_gui_register_controller_message(ui); // message for redrawing a controller (only used by Linux)
 
 	ui->controller = controller;
 	ui->write_function = write_function;
@@ -326,8 +144,7 @@ static void cleanup(LV2UI_Handle handle) {
 	cairo_surface_destroy(ui->pswitch_off);
 	cairo_surface_destroy(ui->surface);
 	cairo_surface_destroy(ui->frame);
-	XDestroyWindow(ui->dpy, ui->win);
-	XCloseDisplay(ui->dpy);
+	gx_gui_destroy_main_window(ui);
 	free(ui);
 }
 
@@ -562,7 +379,7 @@ static void draw_controller(gx_ampegsvtUI *ui, gx_controller* controller) {
 }
 
 // general XWindow expose callback, 
-static void _expose(gx_ampegsvtUI *ui) {
+void _expose(gx_ampegsvtUI *ui) {
 	cairo_push_group (ui->cr);
 
 	cairo_scale (ui->cr, ui->rescale.x, ui->rescale.y);
@@ -587,7 +404,7 @@ static void _expose(gx_ampegsvtUI *ui) {
 }
 
 // redraw a single controller
-static void controller_expose(gx_ampegsvtUI *ui, gx_controller * control) {
+void controller_expose(gx_ampegsvtUI *ui, gx_controller * control) {
 	cairo_push_group (ui->cr);
 	cairo_scale (ui->cr, ui->rescale.x, ui->rescale.y);
 
@@ -618,13 +435,8 @@ static void controller_expose(gx_ampegsvtUI *ui, gx_controller * control) {
 ----------------------------------------------------------------------*/
 
 // resize the xwindow and the cairo xlib surface
-static void resize_event(gx_ampegsvtUI *ui) {
-	XWindowAttributes attrs;
-	XGetWindowAttributes(ui->dpy, (Window)ui->parentXwindow, &attrs);
-	ui->width = attrs.width;
-	ui->height = attrs.height;
-	XResizeWindow (ui->dpy,ui->win ,ui->width, ui->height);
-	cairo_xlib_surface_set_size( ui->surface, ui->width, ui->height);
+void resize_event(gx_ampegsvtUI *ui) {
+	gx_gui_resize_surface(ui);
 	ui->rescale.x  = (double)ui->width/ui->init_width;
 	ui->rescale.y  = (double)ui->height/ui->init_height;
 	ui->rescale.x1 = (double)ui->init_width/ui->width;
@@ -637,14 +449,7 @@ static void resize_event(gx_ampegsvtUI *ui) {
 
 // send event when active controller changed
 static void send_controller_event(gx_ampegsvtUI *ui, int controller) {
-	XClientMessageEvent xevent;
-	xevent.type = ClientMessage;
-	xevent.message_type = ui->DrawController;
-	xevent.display = ui->dpy;
-	xevent.window = ui->win;
-	xevent.format = 16;
-	xevent.data.l[0] = controller;
-	XSendEvent(ui->dpy, ui->win, 0, 0, (XEvent *)&xevent);
+	gx_gui_send_controller_event(ui, controller);
 }
 
 /*------------- check and set state of controllers ---------------*/
@@ -678,7 +483,7 @@ static bool aligned(int x, int y, gx_controller *control, gx_ampegsvtUI *ui) {
 }
 
 // get controller number under mouse pointer and make it active, or return false
-static bool get_active_ctl_num(gx_ampegsvtUI *ui, int *num) {
+bool get_active_ctl_num(gx_ampegsvtUI *ui, int *num) {
 	static bool ret;
 	ret = false;
 	for (int i=0;i<CONTROLS;i++) {
@@ -707,7 +512,7 @@ static bool get_active_controller_num(gx_ampegsvtUI *ui, int *num) {
 /*------------- mouse event handlings ---------------*/
 
 // mouse wheel scroll event
-static void scroll_event(gx_ampegsvtUI *ui, int direction) {
+void scroll_event(gx_ampegsvtUI *ui, int direction) {
 	float value;
 	int num;
 	if (get_active_ctl_num(ui, &num)) {
@@ -736,7 +541,7 @@ static void switch_event(gx_ampegsvtUI *ui, int i) {
 }
 
 // left mouse button is pressed, generate a switch event, or set controller active
-static void button1_event(gx_ampegsvtUI *ui, double* start_value) {
+void button1_event(gx_ampegsvtUI *ui, double* start_value) {
 	int num;
 	if (get_active_ctl_num(ui, &num)) {
 		if (ui->controls[num].type == BSWITCH ||ui->controls[num].type == SWITCH) {
@@ -750,7 +555,7 @@ static void button1_event(gx_ampegsvtUI *ui, double* start_value) {
 }
 
 // mouse move while left button is pressed
-static void motion_event(gx_ampegsvtUI *ui, double start_value, int m_y) {
+void motion_event(gx_ampegsvtUI *ui, double start_value, int m_y) {
 	static const double scaling = 0.5;
 	float value = 0.0;
 	int num;
@@ -769,7 +574,7 @@ static void motion_event(gx_ampegsvtUI *ui, double start_value, int m_y) {
 /*------------- keyboard event handlings ---------------*/
 
 // set min std or max value, depending on which key is pressed
-static void set_key_value(gx_ampegsvtUI *ui, int set_value) {
+void set_key_value(gx_ampegsvtUI *ui, int set_value) {
 	float value = 0.0;
 	int num;
 	if (get_active_controller_num(ui, &num)) {
@@ -781,7 +586,7 @@ static void set_key_value(gx_ampegsvtUI *ui, int set_value) {
 }
 
 // scroll up/down on key's up/right down/left
-static void key_event(gx_ampegsvtUI *ui, int direction) {
+void key_event(gx_ampegsvtUI *ui, int direction) {
 	float value;
 	int num;
 	if (get_active_controller_num(ui, &num)) {
@@ -792,7 +597,7 @@ static void key_event(gx_ampegsvtUI *ui, int direction) {
 }
 
 // set previous controller active on shift+tab key's
-static void set_previous_controller_active(gx_ampegsvtUI *ui) {
+void set_previous_controller_active(gx_ampegsvtUI *ui) {
 	int num;
 	if (get_active_controller_num(ui, &num)) {
 		ui->controls[num].is_active = false;
@@ -816,7 +621,7 @@ static void set_previous_controller_active(gx_ampegsvtUI *ui) {
 }
 
 // set next controller active on tab key
-static void set_next_controller_active(gx_ampegsvtUI *ui) {
+void set_next_controller_active(gx_ampegsvtUI *ui) {
 	int num;
 	if (get_active_controller_num(ui, &num)) {
 		ui->controls[num].is_active = false;
@@ -855,152 +660,6 @@ void get_last_active_controller(gx_ampegsvtUI *ui, bool set) {
 	if (sc != NULL) {
 		sc->is_active = true;
 		send_controller_event(ui, s);
-	}
-}
-
-// map supported key's to integers or return zerro
-static int key_mapping(Display *dpy, XKeyEvent *xkey) {
-	if (xkey->keycode == XKeysymToKeycode(dpy,XK_Tab))
-		return (xkey->state == ShiftMask) ? 1 : 2;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_Up))
-		return 3;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_Right))
-		return 3;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_Down))
-		return 4;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_Left))
-		return 4;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_Home))
-		return 5;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_Insert))
-		return 6;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_End))
-		return 7;
-	// keypad
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Subtract))
-		return 1;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Add))
-		return 2;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Up))
-		return 3;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Right))
-		return 3;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Down))
-		return 4;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Left))
-		return 4;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Home))
-		return 5;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_Insert))
-		return 6;
-	else if (xkey->keycode == XKeysymToKeycode(dpy,XK_KP_End))
-		return 7;
-	else return 0;
-}
-
-/*------------- the event loop ---------------*/
-
-// general xevent handler
-static void event_handler(gx_ampegsvtUI *ui) {
-	XEvent xev;
-	static double start_value = 0.0;
-	static bool blocked = false;
-
-	while (XPending(ui->dpy) > 0) {
-		XNextEvent(ui->dpy, &xev);
-
-		switch(xev.type) {
-			case ConfigureNotify:
-				// configure event, we only check for resize events here
-				resize_event(ui);
-			break;
-			case Expose:
-				// only fetch the last expose event
-				if (xev.xexpose.count == 0) 
-					_expose(ui);
-			break;
-
-			case ButtonPress:
-				ui->pos_x = xev.xbutton.x;
-				ui->pos_y = xev.xbutton.y;
-
-				switch(xev.xbutton.button) {
-					case Button1:
-						if (xev.xbutton.type == ButtonPress) {
-							blocked = true;
-						}
-						// left mouse button click
-						button1_event(ui, &start_value);
-					break;
-					case Button2:
-						// click on the mouse wheel
-						//fprintf(stderr,"Button2 \n");
-					break;
-					case Button3:
-						// right mouse button click
-						//fprintf(stderr,"Button3 \n");
-					break;
-					case  Button4:
-						// mouse wheel scroll up
-						scroll_event(ui, 1);
-					break;
-					case Button5:
-						// mouse wheel scroll down
-						scroll_event(ui, -1);
-					break;
-					default:
-					break;
-				}
-			break;
-			case ButtonRelease:
-				if (xev.xbutton.type == ButtonRelease) {
-					blocked = false;
-				}
-			break;
-
-			case KeyPress:
-				switch (key_mapping(ui->dpy, &xev.xkey)) {
-					case 1: set_previous_controller_active(ui);
-					break;
-					case 2: set_next_controller_active(ui);
-					break;
-					case 3: key_event(ui, 1);
-					break;
-					case 4: key_event(ui, -1);
-					break;
-					case 5: set_key_value(ui, 1);
-					break;
-					case 6: set_key_value(ui, 2);
-					break;
-					case 7: set_key_value(ui, 3);
-					break;
-					default:
-					break;
-				}
-			break;
-
-			case EnterNotify:
-				if (!blocked) get_last_active_controller(ui, true);
-			break;
-			case LeaveNotify:
-				if (!blocked) get_last_active_controller(ui, false);
-			break;
-			case MotionNotify:
-				// mouse move while button1 is pressed
-				if(xev.xmotion.state & Button1Mask) {
-					motion_event(ui, start_value, xev.xmotion.y);
-				}
-			break;
-			case ClientMessage:
-				if (xev.xclient.message_type == ui->DrawController) {
-					int i = (int)xev.xclient.data.l[0];
-					controller_expose(ui, &ui->controls[i]);
-				}
-			break;
-
-			default:
-			break;
-		}
 	}
 }
 
