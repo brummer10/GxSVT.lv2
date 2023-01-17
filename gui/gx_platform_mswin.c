@@ -71,7 +71,7 @@ void gx_gui_register_controller_message(gx_ampegsvtUI *ui) {
 void gx_gui_destroy_main_window(gx_ampegsvtUI *ui) {
 	DestroyWindow(ui->win);
 	// safe to use: doesnt unregister if there are still windows of this class
-	UnregisterClass(TEXT("gx_DrawSurfaceClass"), NULL);
+	UnregisterClass(TEXT("gx_ampegsvtUIClass"), NULL);
 }
 
 void gx_gui_resize_surface(gx_ampegsvtUI *ui) {
