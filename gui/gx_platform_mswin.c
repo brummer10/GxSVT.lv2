@@ -198,6 +198,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		// X11:ButtonPress
 		case WM_LBUTTONDOWN:
 			if (!ui) return DefWindowProc(hwnd, msg, wParam, lParam);
+			SetCapture(hwnd);
 			ui->pos_x = GET_X_LPARAM(lParam);
 			ui->pos_y = GET_Y_LPARAM(lParam);
 			blocked = true;
@@ -217,6 +218,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			return 0;
 		// X11:ButtonRelease
 		case WM_LBUTTONUP:
+			ReleaseCapture();
 			blocked = false;
 			return 0;
 
